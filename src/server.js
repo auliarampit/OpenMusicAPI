@@ -1,16 +1,39 @@
 const Hapi = require('@hapi/hapi');
 const ClientError = require('./exceptions/ClientError');
+const albumsPlugin = require('./api/albums');
+const songsPlugin = require('./api/songs');
+const AlbumsValidator = require('./validator/albums');
+const SongValidator = require('./validator/songs');
+const AlbumsService = require('./services/postgres/albumsService');
+const SongsService = require('./services/postgres/songsService');
 
 const init = async () => {
   const server = Hapi.server({
     port: process.env.PORT,
-    host: process.env.PORT,
+    host: process.env.HOST,
     routes: {
       cors: {
         origin: ['*'],
       },
     },
   });
+
+  await server.register([
+    {
+      plugin: albumsPlugin,
+      options: {
+        service: AlbumsService,
+        validator: AlbumsValidator,
+      },
+    },
+    {
+      plugin: songsPlugin,
+      options: {
+        service: SongsService,
+        validator: SongValidator,
+      },
+    },
+  ]);
 
   server.ext('onPreResponse', (request, h) => {
     const { response } = request;
