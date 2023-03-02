@@ -1,13 +1,19 @@
 const Hapi = require('@hapi/hapi');
+const dotenv = require('dotenv');
 const ClientError = require('./exceptions/ClientError');
-const albumsPlugin = require('./api/albums');
-const songsPlugin = require('./api/songs');
+const albums = require('./api/albums');
+const songs = require('./api/songs');
 const AlbumsValidator = require('./validator/albums');
 const SongValidator = require('./validator/songs');
 const AlbumsService = require('./services/postgres/albumsService');
 const SongsService = require('./services/postgres/songsService');
 
+dotenv.config();
+
 const init = async () => {
+  const albumsService = new AlbumsService();
+  const songsService = new SongsService();
+
   const server = Hapi.server({
     port: process.env.PORT,
     host: process.env.HOST,
@@ -20,16 +26,16 @@ const init = async () => {
 
   await server.register([
     {
-      plugin: albumsPlugin,
+      plugin: albums,
       options: {
-        service: AlbumsService,
+        service: albumsService,
         validator: AlbumsValidator,
       },
     },
     {
-      plugin: songsPlugin,
+      plugin: songs,
       options: {
-        service: SongsService,
+        service: songsService,
         validator: SongValidator,
       },
     },
@@ -60,7 +66,6 @@ const init = async () => {
   });
 
   await server.start();
-  console.log('Server running on %s', server.info.uri);
 };
 
 process.on('unhandledRejection', (err) => {

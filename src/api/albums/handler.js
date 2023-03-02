@@ -14,7 +14,6 @@ class AlbumsHandler {
   async postAlbumHandler(request, h) {
     this._validator.validateAlbumPayload(request.payload);
     const { name, year } = request.payload;
-
     const albumId = await this._service.addAlbum({ name, year });
 
     const response = h.response({
@@ -27,6 +26,16 @@ class AlbumsHandler {
 
     response.code(201);
     return response;
+  }
+
+  async getAlbumsHandler() {
+    const album = await this._service.getAlbums();
+    return {
+      status: 'success',
+      data: {
+        album,
+      },
+    };
   }
 
   async getAlbumByIdHandler(request) {
@@ -44,11 +53,18 @@ class AlbumsHandler {
     this._validator.validateAlbumPayload(request.payload);
     const { id } = request.params;
 
-    await this._service.editAlbumById(id, request.payload);
+    const album = await this._service.editAlbumById(id, request.payload);
 
     return {
       status: 'success',
       message: 'Catatan berhasil diperbarui',
+      data: {
+        album: {
+          id: album[0].id,
+          name: request.payload.name,
+          year: request.payload.year,
+        },
+      },
     };
   }
 

@@ -45,13 +45,36 @@ class AlbumsService {
       throw new NotFoundError('Album tidak ditemukan');
     }
 
-    return result.rows.map(mapDBToModel)[0];
+    const albumId = result.rows.map(mapDBToModel)[0].id;
+
+    const querySongs = {
+      text: 'SELECT * FROM songs WHERE albumId = $1',
+      values: [albumId],
+    };
+
+    const res = await this._pool.query(querySongs);
+
+    const arr = [];
+    res?.rows?.forEach((e) => {
+      arr.push({
+        id: e.id,
+        title: e.title,
+        performer: e.performer,
+      });
+    });
+
+    const newResults = {
+      ...result.rows.map(mapDBToModel)[0],
+      songs: arr,
+    };
+
+    return newResults;
   }
 
   async editAlbumById(id, { name, year }) {
     const updatedAt = new Date().toISOString();
     const query = {
-      text: 'UPDATE albums SET name = $1, year = $2, updated_at = $4 WHERE id = $5 RETURNING id',
+      text: 'UPDATE albums SET name = $1, year = $2, updated_at = $3 WHERE id = $4 RETURNING id',
       values: [name, year, updatedAt, id],
     };
 
