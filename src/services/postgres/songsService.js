@@ -15,20 +15,19 @@ class SongsService {
   }) {
     const id = nanoid(16);
     const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
 
     const query = {
       text: 'INSERT INTO songs VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
-      values: [id, title, year, genre, performer, duration, albumId, createdAt, updatedAt],
+      values: [id, title, year, genre, performer, duration, albumId, createdAt, createdAt],
     };
 
-    const result = await this._pool.query(query);
+    const { rows } = await this._pool.query(query);
 
-    if (!result.rows[0].id) {
+    if (!rows[0].id) {
       throw new InvariantError('Song gagal ditambahkan');
     }
 
-    return result.rows[0].id;
+    return rows[0].id;
   }
 
   async getSongs(title, performer) {
@@ -46,16 +45,11 @@ class SongsService {
       params = `WHERE performer ILIKE '%${performer}%'`;
     }
 
-    const result = await this._pool.query(`SELECT * FROM songs ${params}`);
-    const arr = [];
-    result?.rows?.forEach((e) => {
-      arr.push({
-        id: e.id,
-        title: e.title,
-        performer: e.performer,
-      });
-    });
-    return arr;
+    const { rows } = await this._pool.query(
+      `SELECT  id, title, performer FROM songs ${params}`,
+    );
+
+    return rows;
   }
 
   async getSongById(id) {
@@ -63,27 +57,28 @@ class SongsService {
       text: 'SELECT * FROM songs WHERE id = $1',
       values: [id],
     };
-    const result = await this._pool.query(query);
+    const { rows, rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Song tidak ditemukan');
     }
 
-    return result.rows.map(mapDBToModelSong)[0];
+    return rows.map(mapDBToModelSong)[0];
   }
 
   async editSongById(id, {
     title, year, performer, genre, duration,
   }) {
     const updatedAt = new Date().toISOString();
+
     const query = {
       text: 'UPDATE songs SET title = $1, year = $2, performer = $3, genre = $4, duration = $5, updated_at = $6 WHERE id = $7 RETURNING id',
       values: [title, year, performer, genre, duration, updatedAt, id],
     };
 
-    const result = await this._pool.query(query);
+    const { rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Gagal memperbarui song. Id tidak ditemukan');
     }
   }
@@ -94,9 +89,9 @@ class SongsService {
       values: [id],
     };
 
-    const result = await this._pool.query(query);
+    const { rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Song gagal dihapus. Id tidak ditemukan');
     }
   }

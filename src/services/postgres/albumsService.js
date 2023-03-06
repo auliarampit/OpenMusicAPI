@@ -13,25 +13,24 @@ class AlbumsService {
   async addAlbum({ name, year }) {
     const id = nanoid(16);
     const createdAt = new Date().toISOString();
-    const updatedAt = createdAt;
 
     const query = {
       text: 'INSERT INTO albums VALUES($1, $2, $3, $4, $5) RETURNING id',
-      values: [id, name, year, createdAt, updatedAt],
+      values: [id, name, year, createdAt, createdAt],
     };
 
-    const result = await this._pool.query(query);
+    const { rows } = await this._pool.query(query);
 
-    if (!result.rows[0].id) {
+    if (!rows[0].id) {
       throw new InvariantError('Album gagal ditambahkan');
     }
 
-    return result.rows[0].id;
+    return rows[0].id;
   }
 
   async getAlbums() {
-    const result = await this._pool.query('SELECT * FROM albums');
-    return result.rows.map(mapDBToModel);
+    const { rows } = await this._pool.query('SELECT * FROM albums');
+    return rows.map(mapDBToModel);
   }
 
   async getAlbumById(id) {
@@ -39,33 +38,24 @@ class AlbumsService {
       text: 'SELECT * FROM albums WHERE id = $1',
       values: [id],
     };
-    const result = await this._pool.query(query);
+    const { rows, rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Album tidak ditemukan');
     }
 
-    const albumId = result.rows.map(mapDBToModel)[0].id;
+    const albumId = rows.map(mapDBToModel)[0].id;
 
     const querySongs = {
-      text: 'SELECT * FROM songs WHERE songs."albumId" = $1',
+      text: 'SELECT id, title, performer FROM songs WHERE songs."albumId" = $1',
       values: [albumId],
     };
 
     const res = await this._pool.query(querySongs);
 
-    const arr = [];
-    res?.rows?.forEach((e) => {
-      arr.push({
-        id: e.id,
-        title: e.title,
-        performer: e.performer,
-      });
-    });
-
     const newResults = {
-      ...result.rows.map(mapDBToModel)[0],
-      songs: arr,
+      ...rows.map(mapDBToModel)[0],
+      songs: res,
     };
 
     return newResults;
@@ -73,18 +63,19 @@ class AlbumsService {
 
   async editAlbumById(id, { name, year }) {
     const updatedAt = new Date().toISOString();
+
     const query = {
       text: 'UPDATE albums SET name = $1, year = $2, updated_at = $3 WHERE id = $4 RETURNING id',
       values: [name, year, updatedAt, id],
     };
 
-    const result = await this._pool.query(query);
+    const { rows, rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Gagal memperbarui album. Id tidak ditemukan');
     }
 
-    return result.rows;
+    return rows;
   }
 
   async deleteAlbumById(id) {
@@ -93,9 +84,9 @@ class AlbumsService {
       values: [id],
     };
 
-    const result = await this._pool.query(query);
+    const { rowCount } = await this._pool.query(query);
 
-    if (!result.rows.length) {
+    if (!rowCount) {
       throw new NotFoundError('Album gagal dihapus. Id tidak ditemukan');
     }
   }
