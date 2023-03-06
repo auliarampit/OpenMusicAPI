@@ -48,7 +48,7 @@ class AlbumsService {
     const albumId = result.rows.map(mapDBToModel)[0].id;
 
     const querySongs = {
-      text: 'SELECT * FROM songs WHERE albumId = $1',
+      text: 'SELECT * FROM songs WHERE songs."albumId" = $1',
       values: [albumId],
     };
 
