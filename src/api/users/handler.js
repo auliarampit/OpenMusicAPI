@@ -1,19 +1,16 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-// const autoBind = require('auto-bind');
+/* eslint-disable no-underscore-dangle */
 
 class UsersHandler {
   constructor(service, validator) {
-    this.service = service;
-    this.validator = validator;
-
-    // autoBind(this);
+    this._service = service;
+    this._validator = validator;
   }
 
   async postUserHandler(request, h) {
-    this.validator.validateUserPayload(request.payload);
+    this._validator.validateUserPayload(request.payload);
     const { username, password, fullname } = request.payload;
 
-    const userId = await this.service.addUser({ username, password, fullname });
+    const userId = await this._service.addUser({ username, password, fullname });
 
     const response = h.response({
       status: 'success',
@@ -28,7 +25,7 @@ class UsersHandler {
   }
 
   async getUsersHandler() {
-    const user = await this.service.getUsers();
+    const user = await this._service.getUsers();
     return {
       status: 'success',
       data: {
@@ -39,7 +36,7 @@ class UsersHandler {
 
   async getUserByIdHandler(request) {
     const { id } = request.params;
-    const user = await this.service.getUserById(id);
+    const user = await this._service.getUserById(id);
     return {
       status: 'success',
       data: {
@@ -49,10 +46,10 @@ class UsersHandler {
   }
 
   async putUserByIdHandler(request) {
-    this.validator.validateUserPayload(request.payload);
+    this._validator.validateUserPayload(request.payload);
     const { id } = request.params;
 
-    const user = await this.service.editUserById(id, request.payload);
+    const user = await this._service.editUserById(id, request.payload);
 
     return {
       status: 'success',
@@ -69,7 +66,7 @@ class UsersHandler {
 
   async deleteUserByIdHandler(request) {
     const { id } = request.params;
-    await this.service.deleteUserById(id);
+    await this._service.deleteUserById(id);
 
     return {
       status: 'success',
